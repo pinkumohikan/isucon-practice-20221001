@@ -56,7 +56,7 @@ CREATE TABLE `user_bans` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 CREATE TABLE `user_devices` (
-  `id` bigint NOT NULL,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `user_id` bigint NOT NULL comment 'ユーザID', 
   `platform_id` varchar(255) NOT NULL comment 'プラットフォームのviewer_id',
   `platform_type` int(1) NOT NULL comment 'PC:1,iOS:2,Android:3', 
