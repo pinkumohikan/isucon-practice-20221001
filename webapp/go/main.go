@@ -1640,7 +1640,7 @@ func (h *Handler) updateDeck(c echo.Context) error {
 	}
 
 	// id再取得
-	query = "SELECT id from user_decks ORDER BY id DESC LIMIT 1"
+	query = "SELECT LAST_INSERT_ID() FROM user_decks limit 1"
 	if err = tx.Get(newDeck.ID, query); err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
