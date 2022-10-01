@@ -124,6 +124,11 @@ func connectDB(batch bool) (*sqlx.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	dbx.SetMaxIdleConns(100)
+	dbx.SetMaxOpenConns(100)
+	dbx.SetConnMaxLifetime(120 * time.Second)
+
 	return dbx, nil
 }
 
