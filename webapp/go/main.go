@@ -1353,7 +1353,6 @@ func (h *Handler) listItem(c echo.Context) error {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 	token := &UserOneTimeToken{
-		ID:        tID,
 		UserID:    userID,
 		Token:     tk,
 		TokenType: 2,

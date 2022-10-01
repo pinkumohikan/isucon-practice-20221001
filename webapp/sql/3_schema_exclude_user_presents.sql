@@ -223,7 +223,7 @@ CREATE TABLE `user_sessions` (
 
 /* 更新処理について利用するone time tokenの管理 */
 CREATE TABLE `user_one_time_tokens` (
-  `id` bigint NOT NULL,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `user_id` bigint NOT NULL,
   `token` varchar(128) NOT NULL,
   `token_type` int(2) NOT NULL comment '1:ガチャ用、2:カード強化用',
