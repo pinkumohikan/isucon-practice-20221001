@@ -684,6 +684,7 @@ func (h *Handler) createUser(c echo.Context) error {
 		CreatedAt:    requestAt,
 		UpdatedAt:    requestAt,
 	}
+
 	query = "INSERT INTO user_devices(user_id, platform_id, platform_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?)"
 	_, err = tx.Exec(query, user.ID, req.ViewerID, req.PlatformType, requestAt, requestAt)
 	if err != nil {
