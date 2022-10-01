@@ -548,7 +548,7 @@ func (h *Handler) obtainItem(tx *sqlx.Tx, userID, itemID int64, itemType int, ob
 		// id再取得
 		query = "SELECT LAST_INSERT_ID()"
 		if err = tx.Get(&card.ID, query); err != nil {
-			return errorResponse(c, http.StatusInternalServerError, err)
+			return nil, nil, nil, err
 		}
 
 		obtainCards = append(obtainCards, card)
