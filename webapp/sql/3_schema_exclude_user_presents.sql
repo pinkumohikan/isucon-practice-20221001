@@ -33,7 +33,7 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 CREATE TABLE `user_decks` (
-  `id` bigint NOT NULL,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `user_id` bigint NOT NULL comment 'ユーザID', 
   `user_card_id_1` bigint NOT NULL comment '装備枠1',
   `user_card_id_2` bigint NOT NULL comment '装備枠2',

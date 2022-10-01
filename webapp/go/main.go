@@ -722,6 +722,7 @@ func (h *Handler) createUser(c echo.Context) error {
 		if _, err := tx.Exec(query, card.ID, card.UserID, card.CardID, card.AmountPerSec, card.Level, card.TotalExp, card.CreatedAt, card.UpdatedAt); err != nil {
 			return errorResponse(c, http.StatusInternalServerError, err)
 		}
+
 		initCards = append(initCards, card)
 	}
 
@@ -1621,13 +1622,7 @@ func (h *Handler) updateDeck(c echo.Context) error {
 	if _, err = tx.Exec(query, requestAt, requestAt, userID); err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
-
-	udID, err := h.generateID()
-	if err != nil {
-		return errorResponse(c, http.StatusInternalServerError, err)
-	}
 	newDeck := &UserDeck{
-		ID:        udID,
 		UserID:    userID,
 		CardID1:   req.CardIDs[0],
 		CardID2:   req.CardIDs[1],
@@ -1635,13 +1630,19 @@ func (h *Handler) updateDeck(c echo.Context) error {
 		CreatedAt: requestAt,
 		UpdatedAt: requestAt,
 	}
-	query = "INSERT INTO user_decks(id, user_id, user_card_id_1, user_card_id_2, user_card_id_3, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
-	if _, err := tx.Exec(query, newDeck.ID, newDeck.UserID, newDeck.CardID1, newDeck.CardID2, newDeck.CardID3, newDeck.CreatedAt, newDeck.UpdatedAt); err != nil {
+	query = "INSERT INTO user_decks(user_id, user_card_id_1, user_card_id_2, user_card_id_3, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
+	if _, err := tx.Exec(query, newDeck.UserID, newDeck.CardID1, newDeck.CardID2, newDeck.CardID3, newDeck.CreatedAt, newDeck.UpdatedAt); err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
+		return errorResponse(c, http.StatusInternalServerError, err)
+	}
+
+	// id再取得
+	query = "SELECT LAST_INSERT_ID()"
+	if err = tx.Get(newDeck.ID, query); err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 
