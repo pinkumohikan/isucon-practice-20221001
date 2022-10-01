@@ -531,12 +531,7 @@ func (h *Handler) obtainItem(tx *sqlx.Tx, userID, itemID int64, itemType int, ob
 			return nil, nil, nil, err
 		}
 
-		cID, err := h.generateID()
-		if err != nil {
-			return nil, nil, nil, err
-		}
 		card := &UserCard{
-			ID:           cID,
 			UserID:       userID,
 			CardID:       item.ID,
 			AmountPerSec: *item.AmountPerSec,
@@ -545,10 +540,17 @@ func (h *Handler) obtainItem(tx *sqlx.Tx, userID, itemID int64, itemType int, ob
 			CreatedAt:    requestAt,
 			UpdatedAt:    requestAt,
 		}
-		query = "INSERT INTO user_cards(id, user_id, card_id, amount_per_sec, level, total_exp, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-		if _, err := tx.Exec(query, card.ID, card.UserID, card.CardID, card.AmountPerSec, card.Level, card.TotalExp, card.CreatedAt, card.UpdatedAt); err != nil {
+		query = "INSERT INTO user_cards(user_id, card_id, amount_per_sec, level, total_exp, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
+		if _, err := tx.Exec(query, card.UserID, card.CardID, card.AmountPerSec, card.Level, card.TotalExp, card.CreatedAt, card.UpdatedAt); err != nil {
 			return nil, nil, nil, err
 		}
+
+		// id再取得
+		query = "SELECT LAST_INSERT_ID()"
+		if err = tx.Get(&card.ID, query); err != nil {
+			return errorResponse(c, http.StatusInternalServerError, err)
+		}
+
 		obtainCards = append(obtainCards, card)
 
 	case 3, 4: // 強化素材

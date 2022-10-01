@@ -170,7 +170,7 @@ CREATE TABLE `user_items` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 CREATE TABLE `user_cards` (
-  `id` bigint NOT NULL,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `user_id` bigint NOT NULL comment 'ユーザID',
   `card_id` int NOT NULL comment '装備のID',
   `amount_per_sec` int NOT NULL comment '生産性（ISU/sec)',
