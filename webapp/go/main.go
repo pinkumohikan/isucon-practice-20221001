@@ -1636,7 +1636,7 @@ func (h *Handler) updateDeck(c echo.Context) error {
 
 	// id再取得
 	query = "SELECT LAST_INSERT_ID()"
-	if err = tx.Get(newDeck.ID, query); err != nil {
+	if err = tx.Get(&newDeck.ID, query); err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 
