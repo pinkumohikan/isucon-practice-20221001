@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"math/rand"
 	"net/http"
@@ -13,12 +14,14 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/felixge/fgprof"
 	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
+	_ "net/http/pprof"
 )
 
 var (
@@ -50,6 +53,11 @@ type Handler struct {
 }
 
 func main() {
+	http.DefaultServeMux.Handle("/debug/fgprof", fgprof.Handler())
+	go func() {
+		log.Println(http.ListenAndServe(":6060", nil))
+	}()
+
 	rand.Seed(time.Now().UnixNano())
 	time.Local = time.FixedZone("Local", 9*60*60)
 
