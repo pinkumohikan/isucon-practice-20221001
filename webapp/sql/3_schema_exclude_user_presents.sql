@@ -157,7 +157,7 @@ CREATE TABLE `gacha_item_masters` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 CREATE TABLE `user_items` (
-  `id` bigint NOT NULL,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `user_id` bigint NOT NULL comment 'ユーザID',
   `item_type` int(1) NOT NULL comment 'アイテム種別:1はusersテーブル、2はuser_cardsへ。3,4をこのテーブルへ保存',
   `item_id` int NOT NULL comment 'アイテムID',
