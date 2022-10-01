@@ -630,6 +630,10 @@ func initialize(c echo.Context) error {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 
+	if _, err := dbx.Exec("CALL sys.ps_truncate_all_tables(FALSE)"); err != nil {
+		return errorResponse(c, http.StatusInternalServerError, err)
+	}
+
 	return successResponse(c, &InitializeResponse{
 		Language: "go",
 	})
