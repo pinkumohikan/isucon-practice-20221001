@@ -21,7 +21,7 @@ DROP TABLE IF EXISTS `version_masters`;
 DROP TABLE IF EXISTS `admin_users`;
 
 CREATE TABLE `users` (
-  `id` bigint NOT NULL,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `isu_coin` bigint NOT NULL default 0 comment '所持ISU-COIN',
   `last_getreward_at` bigint NOT NULL comment '最後にリワードを取得した日時',
   `last_activated_at` bigint NOT NULL comment '最終アクティブ日時',

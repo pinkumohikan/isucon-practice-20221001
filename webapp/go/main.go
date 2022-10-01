@@ -659,12 +659,7 @@ func (h *Handler) createUser(c echo.Context) error {
 	defer tx.Rollback() //nolint:errcheck
 
 	// ユーザ作成
-	uID, err := h.generateID()
-	if err != nil {
-		return errorResponse(c, http.StatusInternalServerError, err)
-	}
 	user := &User{
-		ID:              uID,
 		IsuCoin:         0,
 		LastGetRewardAt: requestAt,
 		LastActivatedAt: requestAt,
@@ -672,26 +667,31 @@ func (h *Handler) createUser(c echo.Context) error {
 		CreatedAt:       requestAt,
 		UpdatedAt:       requestAt,
 	}
-	query := "INSERT INTO users(id, last_activated_at, registered_at, last_getreward_at, created_at, updated_at) VALUES(?, ?, ?, ?, ?, ?)"
-	if _, err = tx.Exec(query, user.ID, user.LastActivatedAt, user.RegisteredAt, user.LastGetRewardAt, user.CreatedAt, user.UpdatedAt); err != nil {
+	query := "INSERT INTO users(last_activated_at, registered_at, last_getreward_at, created_at, updated_at) VALUES(?, ?, ?, ?, ?)"
+	if _, err = tx.Exec(query, user.LastActivatedAt, user.RegisteredAt, user.LastGetRewardAt, user.CreatedAt, user.UpdatedAt); err != nil {
+		return errorResponse(c, http.StatusInternalServerError, err)
+	}
+	// id再取得
+	query = "SELECT LAST_INSERT_ID()"
+	if err := tx.Get(&user.ID, query); err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 
-	udID, err := h.generateID()
-	if err != nil {
-		return errorResponse(c, http.StatusInternalServerError, err)
-	}
 	userDevice := &UserDevice{
-		ID:           udID,
 		UserID:       user.ID,
 		PlatformID:   req.ViewerID,
 		PlatformType: req.PlatformType,
 		CreatedAt:    requestAt,
 		UpdatedAt:    requestAt,
 	}
-	query = "INSERT INTO user_devices(id, user_id, platform_id, platform_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
-	_, err = tx.Exec(query, userDevice.ID, user.ID, req.ViewerID, req.PlatformType, requestAt, requestAt)
+	query = "INSERT INTO user_devices(user_id, platform_id, platform_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?)"
+	_, err = tx.Exec(query, user.ID, req.ViewerID, req.PlatformType, requestAt, requestAt)
 	if err != nil {
+		return errorResponse(c, http.StatusInternalServerError, err)
+	}
+	// id再取得
+	query = "SELECT LAST_INSERT_ID()"
+	if err := tx.Get(&userDevice.ID, query); err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 
@@ -707,12 +707,10 @@ func (h *Handler) createUser(c echo.Context) error {
 
 	initCards := make([]*UserCard, 0, 3)
 	for i := 0; i < 3; i++ {
-		cID, err := h.generateID()
 		if err != nil {
 			return errorResponse(c, http.StatusInternalServerError, err)
 		}
 		card := &UserCard{
-			ID:           cID,
 			UserID:       user.ID,
 			CardID:       initCard.ID,
 			AmountPerSec: *initCard.AmountPerSec,
@@ -721,20 +719,20 @@ func (h *Handler) createUser(c echo.Context) error {
 			CreatedAt:    requestAt,
 			UpdatedAt:    requestAt,
 		}
-		query = "INSERT INTO user_cards(id, user_id, card_id, amount_per_sec, level, total_exp, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-		if _, err := tx.Exec(query, card.ID, card.UserID, card.CardID, card.AmountPerSec, card.Level, card.TotalExp, card.CreatedAt, card.UpdatedAt); err != nil {
+		query = "INSERT INTO user_cards(user_id, card_id, amount_per_sec, level, total_exp, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
+		if _, err := tx.Exec(query, card.UserID, card.CardID, card.AmountPerSec, card.Level, card.TotalExp, card.CreatedAt, card.UpdatedAt); err != nil {
+			return errorResponse(c, http.StatusInternalServerError, err)
+		}
+		// id再取得
+		query = "SELECT LAST_INSERT_ID()"
+		if err := tx.Get(&card.ID, query); err != nil {
 			return errorResponse(c, http.StatusInternalServerError, err)
 		}
 
 		initCards = append(initCards, card)
 	}
 
-	deckID, err := h.generateID()
-	if err != nil {
-		return errorResponse(c, http.StatusInternalServerError, err)
-	}
 	initDeck := &UserDeck{
-		ID:        deckID,
 		UserID:    user.ID,
 		CardID1:   initCards[0].ID,
 		CardID2:   initCards[1].ID,
@@ -742,8 +740,13 @@ func (h *Handler) createUser(c echo.Context) error {
 		CreatedAt: requestAt,
 		UpdatedAt: requestAt,
 	}
-	query = "INSERT INTO user_decks(id, user_id, user_card_id_1, user_card_id_2, user_card_id_3, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
-	if _, err := tx.Exec(query, initDeck.ID, initDeck.UserID, initDeck.CardID1, initDeck.CardID2, initDeck.CardID3, initDeck.CreatedAt, initDeck.UpdatedAt); err != nil {
+	query = "INSERT INTO user_decks(user_id, user_card_id_1, user_card_id_2, user_card_id_3, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
+	if _, err := tx.Exec(query, initDeck.UserID, initDeck.CardID1, initDeck.CardID2, initDeck.CardID3, initDeck.CreatedAt, initDeck.UpdatedAt); err != nil {
+		return errorResponse(c, http.StatusInternalServerError, err)
+	}
+	// id再取得
+	query = "SELECT LAST_INSERT_ID()"
+	if err := tx.Get(&initDeck.ID, query); err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 
