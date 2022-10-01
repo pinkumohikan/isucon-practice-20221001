@@ -362,12 +362,7 @@ func (h *Handler) obtainLoginBonus(tx *sqlx.Tx, userID int64, requestAt int64) (
 			}
 			initBonus = true
 
-			ubID, err := h.generateID()
-			if err != nil {
-				return nil, err
-			}
 			userBonus = &UserLoginBonus{
-				ID:                 ubID,
 				UserID:             userID,
 				LoginBonusID:       bonus.ID,
 				LastRewardSequence: 0,
@@ -408,8 +403,13 @@ func (h *Handler) obtainLoginBonus(tx *sqlx.Tx, userID int64, requestAt int64) (
 
 		// 進捗の保存
 		if initBonus {
-			query = "INSERT INTO user_login_bonuses(id, user_id, login_bonus_id, last_reward_sequence, loop_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
-			if _, err = tx.Exec(query, userBonus.ID, userBonus.UserID, userBonus.LoginBonusID, userBonus.LastRewardSequence, userBonus.LoopCount, userBonus.CreatedAt, userBonus.UpdatedAt); err != nil {
+			query = "INSERT INTO user_login_bonuses(user_id, login_bonus_id, last_reward_sequence, loop_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
+			if _, err = tx.Exec(query, userBonus.UserID, userBonus.LoginBonusID, userBonus.LastRewardSequence, userBonus.LoopCount, userBonus.CreatedAt, userBonus.UpdatedAt); err != nil {
+				return nil, err
+			}
+			// id再取得
+			query = "SELECT LAST_INSERT_ID()"
+			if err := tx.Get(&userBonus.ID, query); err != nil {
 				return nil, err
 			}
 		} else {

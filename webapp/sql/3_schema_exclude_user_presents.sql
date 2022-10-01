@@ -93,7 +93,7 @@ CREATE TABLE `login_bonus_reward_masters` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 CREATE TABLE `user_login_bonuses` (
-  `id` bigint NOT NULL,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `user_id` bigint NOT NULL comment 'ユーザID', 
   `login_bonus_id` int NOT NULL comment 'ログインボーナスID',
   `last_reward_sequence` int NOT NULL comment '最終受け取り報酬番号',
@@ -122,7 +122,7 @@ CREATE TABLE `present_all_masters` (
 /* 全員プレゼント履歴テーブル */
 
 CREATE TABLE `user_present_all_received_history` (
-  `id` bigint NOT NULL,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `user_id` bigint NOT NULL comment '受けとったユーザID',
   `present_all_id` bigint NOT NULL comment '全員プレゼントマスタのID',
   `received_at` bigint NOT NULL comment '受け取った日時',
