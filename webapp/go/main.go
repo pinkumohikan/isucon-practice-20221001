@@ -668,7 +668,7 @@ func (h *Handler) createUser(c echo.Context) error {
 		UpdatedAt:       requestAt,
 	}
 	query := "INSERT INTO users(last_activated_at, registered_at, last_getreward_at, created_at, updated_at) VALUES(?, ?, ?, ?, ?)"
-	if _, err = tx.Exec(query, user.LastActivatedAt, user.RegisteredAt, user.LastGetRewardAt, user.CreatedAt, user.UpdatedAt); err != nil {
+	if _, err := tx.Exec(query, user.LastActivatedAt, user.RegisteredAt, user.LastGetRewardAt, user.CreatedAt, user.UpdatedAt); err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 	// id再取得
@@ -685,7 +685,7 @@ func (h *Handler) createUser(c echo.Context) error {
 		UpdatedAt:    requestAt,
 	}
 	query = "INSERT INTO user_devices(user_id, platform_id, platform_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?)"
-	_, err = tx.Exec(query, user.ID, req.ViewerID, req.PlatformType, requestAt, requestAt)
+	_, err := tx.Exec(query, user.ID, req.ViewerID, req.PlatformType, requestAt, requestAt)
 	if err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
@@ -698,7 +698,7 @@ func (h *Handler) createUser(c echo.Context) error {
 	// 初期デッキ付与
 	initCard := new(ItemMaster)
 	query = "SELECT * FROM item_masters WHERE id=?"
-	if err = tx.Get(initCard, query, 2); err != nil {
+	if err := tx.Get(initCard, query, 2); err != nil {
 		if err == sql.ErrNoRows {
 			return errorResponse(c, http.StatusNotFound, ErrItemNotFound)
 		}
@@ -775,11 +775,11 @@ func (h *Handler) createUser(c echo.Context) error {
 		ExpiredAt: requestAt + 86400,
 	}
 	query = "INSERT INTO user_sessions(user_id, session_id, created_at, updated_at, expired_at) VALUES (?, ?, ?, ?, ?)"
-	if _, err = tx.Exec(query, sess.UserID, sess.SessionID, sess.CreatedAt, sess.UpdatedAt, sess.ExpiredAt); err != nil {
+	if _, err := tx.Exec(query, sess.UserID, sess.SessionID, sess.CreatedAt, sess.UpdatedAt, sess.ExpiredAt); err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 
-	err = tx.Commit()
+	err := tx.Commit()
 	if err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
