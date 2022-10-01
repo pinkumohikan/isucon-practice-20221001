@@ -466,22 +466,16 @@ func (h *Handler) obtainPresent(tx *sqlx.Tx, userID int64, requestAt int64) ([]*
 			return nil, err
 		}
 
-		phID, err := h.generateID()
-		if err != nil {
-			return nil, err
-		}
 		history := &UserPresentAllReceivedHistory{
-			ID:           phID,
 			UserID:       userID,
 			PresentAllID: np.ID,
 			ReceivedAt:   requestAt,
 			CreatedAt:    requestAt,
 			UpdatedAt:    requestAt,
 		}
-		query = "INSERT INTO user_present_all_received_history(id, user_id, present_all_id, received_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
+		query = "INSERT INTO user_present_all_received_history(user_id, present_all_id, received_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?)"
 		if _, err := tx.Exec(
 			query,
-			history.ID,
 			history.UserID,
 			history.PresentAllID,
 			history.ReceivedAt,
