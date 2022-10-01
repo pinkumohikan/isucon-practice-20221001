@@ -547,7 +547,7 @@ func (h *Handler) obtainItem(tx *sqlx.Tx, userID, itemID int64, itemType int, ob
 
 		// id再取得
 		query = "SELECT LAST_INSERT_ID()"
-		if err = tx.Get(&card.ID, query); err != nil {
+		if err := tx.Get(&card.ID, query); err != nil {
 			return nil, nil, nil, err
 		}
 
