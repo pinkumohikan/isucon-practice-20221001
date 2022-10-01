@@ -1,0 +1,5 @@
+admin/*
+frontend/*
+go/isuconquest
+sql/4_alldata_exclude_user_presents.sql
+sql/5_user_presents_not_receive_data.tsv
