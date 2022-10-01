@@ -210,7 +210,7 @@ CREATE TABLE `version_masters` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 CREATE TABLE `user_sessions` (
-  `id` bigint NOT NULL,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `user_id` bigint NOT NULL,
   `session_id` varchar(128) NOT NULL,
   `created_at` bigint NOT NULL,
