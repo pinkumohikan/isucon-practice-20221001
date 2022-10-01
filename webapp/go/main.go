@@ -16,7 +16,6 @@ import (
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/felixge/fgprof"
-	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
