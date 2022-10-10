@@ -147,7 +147,6 @@ func connectDB(batch bool) (*sqlx.DB, error) {
 }
 
 func initDB() (err error) {
-	dbHosts := []string{}
 	for i, host := range dbHosts {
 		dbs[i], err = connectDBByHost(host, false)
 		if err != nil {
