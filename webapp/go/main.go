@@ -161,7 +161,6 @@ func selectDB(id int64) *sqlx.DB {
 	return dbs[int(id)%len(dbs)]
 }
 
-// connectDB DBに接続する
 func connectDBByHost(host string, batch bool) (*sqlx.DB, error) {
 	dsn := fmt.Sprintf(
 		"%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=true&loc=%s&multiStatements=%t&interpolateParams=true",
@@ -690,8 +689,10 @@ func initialize(c echo.Context) error {
 		return errorResponse(c, http.StatusInternalServerError, <-errs)
 	}
 
-	if _, err := dbx.Exec("CALL sys.ps_truncate_all_tables(FALSE)"); err != nil {
-		return errorResponse(c, http.StatusInternalServerError, err)
+	for _, db := range dbs {
+		if _, err := db.Exec("CALL sys.ps_truncate_all_tables(FALSE)"); err != nil {
+			return errorResponse(c, http.StatusInternalServerError, err)
+		}
 	}
 
 	return successResponse(c, &InitializeResponse{
