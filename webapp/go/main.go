@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/felixge/fgprof"
@@ -45,7 +46,7 @@ const (
 	DeckCardNumber      int = 3
 	PresentCountPerPage int = 100
 
-	SQLDirectory string = "../sql/"
+	SQLDirectory string = "/home/isucon/webapp/sql/"
 )
 
 type Handler struct {
@@ -616,10 +617,33 @@ func initialize(c echo.Context) error {
 	}
 	defer dbx.Close()
 
-	out, err := exec.Command("/bin/sh", "-c", SQLDirectory+"init.sh").CombinedOutput()
-	if err != nil {
-		c.Logger().Errorf("Failed to initialize %s: %v", string(out), err)
-		return errorResponse(c, http.StatusInternalServerError, err)
+	// ----------
+	// データベースの初期化
+	// ----------
+	wg := sync.WaitGroup{}
+	sshHosts := []string{
+		"isucon-app2",
+		"isucon-app3",
+		"isucon-app4",
+		"isucon-app5",
+	}
+	errs := make(chan error, len(sshHosts))
+	defer close(errs)
+	for _, host := range sshHosts {
+		wg.Add(1)
+		go func(host string) {
+			defer wg.Done()
+			out, err := exec.Command("/bin/sh", "-c", "ssh "+host+" "+"\"/bin/sh -c "+SQLDirectory+"init.sh\"").CombinedOutput()
+			if err != nil {
+				c.Logger().Errorf("Failed to initialize %s: %v", string(out), err)
+				errs <- err
+				return
+			}
+		}(host)
+	}
+	wg.Wait()
+	if len(errs) > 0 {
+		return errorResponse(c, http.StatusInternalServerError, <-errs)
 	}
 
 	if _, err := dbx.Exec("CALL sys.ps_truncate_all_tables(FALSE)"); err != nil {
