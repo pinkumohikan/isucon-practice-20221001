@@ -16,6 +16,8 @@ import (
 
 	_ "net/http/pprof"
 
+	_ "github.com/go-sql-driver/mysql"
+
 	"github.com/felixge/fgprof"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
