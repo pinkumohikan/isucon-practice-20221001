@@ -77,6 +77,10 @@ func main() {
 	}
 	defer dbx.Close()
 
+	if err := initDB(); err != nil {
+		e.Logger.Fatalf("failed to connect to db: %v", err)
+	}
+
 	e.Server.Addr = fmt.Sprintf(":%v", "8080")
 	h := &Handler{
 		DB: dbx,
@@ -117,6 +121,10 @@ func main() {
 	e.Logger.Error(e.StartServer(e.Server))
 }
 
+// app4, app5
+var dbHosts = []string{"172.31.10.189", "172.31.6.131"}
+var dbs = make([]*sqlx.DB, len(dbHosts))
+
 // connectDB DBに接続する
 func connectDB(batch bool) (*sqlx.DB, error) {
 	dsn := fmt.Sprintf(
@@ -136,7 +144,7 @@ func connectDB(batch bool) (*sqlx.DB, error) {
 	return dbx, nil
 }
 
-func initDB() error {
+func initDB() (err error) {
 	dbHosts := []string{}
 	for i, host := range dbHosts {
 		dbs[i], err = connectDBByHost(host, false)
@@ -145,6 +153,10 @@ func initDB() error {
 		}
 	}
 	return nil
+}
+
+func selectDB(id int64) *sqlx.DB {
+	return dbs[int(id)%len(dbs)]
 }
 
 // connectDB DBに接続する
@@ -1242,12 +1254,13 @@ func (h *Handler) listPresent(c echo.Context) error {
 	WHERE user_id = ? AND deleted_at IS NULL
 	ORDER BY created_at DESC, id
 	LIMIT ? OFFSET ?`
-	if err = h.DB.Select(&presentList, query, userID, PresentCountPerPage, offset); err != nil {
+	dbx := selectDB(userID)
+	if err = dbx.Select(&presentList, query, userID, PresentCountPerPage, offset); err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 
 	var presentCount int
-	if err = h.DB.Get(&presentCount, "SELECT COUNT(*) FROM user_presents WHERE user_id = ? AND deleted_at IS NULL", userID); err != nil {
+	if err = dbx.Get(&presentCount, "SELECT COUNT(*) FROM user_presents WHERE user_id = ? AND deleted_at IS NULL", userID); err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 
@@ -1304,7 +1317,8 @@ func (h *Handler) receivePresent(c echo.Context) error {
 		return errorResponse(c, http.StatusBadRequest, err)
 	}
 	obtainPresent := []*UserPresent{}
-	if err = h.DB.Select(&obtainPresent, query, params...); err != nil {
+	sqlx := selectDB(userID)
+	if err = sqlx.Select(&obtainPresent, query, params...); err != nil {
 		return errorResponse(c, http.StatusBadRequest, err)
 	}
 
@@ -1314,11 +1328,13 @@ func (h *Handler) receivePresent(c echo.Context) error {
 		})
 	}
 
-	tx, err := h.DB.Beginx()
+	ptx, err := selectDB(userID).Beginx()
+	tx, err := selectDB(userID).Beginx()
 	if err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
-	defer tx.Rollback() //nolint:errcheck
+	defer ptx.Rollback()
+	defer tx.Rollback()
 
 	// 配布処理
 	for i := range obtainPresent {
@@ -1330,7 +1346,8 @@ func (h *Handler) receivePresent(c echo.Context) error {
 		obtainPresent[i].DeletedAt = &requestAt
 		v := obtainPresent[i]
 		query = "UPDATE user_presents SET deleted_at=?, updated_at=? WHERE id=?"
-		_, err := tx.Exec(query, requestAt, requestAt, v.ID)
+
+		_, err := ptx.Exec(query, requestAt, requestAt, v.ID)
 		if err != nil {
 			return errorResponse(c, http.StatusInternalServerError, err)
 		}
@@ -1348,6 +1365,7 @@ func (h *Handler) receivePresent(c echo.Context) error {
 	}
 
 	err = tx.Commit()
+	err = ptx.Commit()
 	if err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
