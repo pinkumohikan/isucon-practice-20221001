@@ -237,7 +237,7 @@ CREATE TABLE `user_one_time_tokens` (
 
 /* 管理者権限のセッション管理 */
 CREATE TABLE `admin_sessions` (
-  `id` bigint NOT NULL,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `user_id` bigint NOT NULL,
   `session_id` varchar(128) NOT NULL,
   `created_at` bigint NOT NULL,
