@@ -40,10 +40,10 @@ truncate-db-logs:
 	ssh isucon-app5 "sudo chmod 777 /var/log/mysql/mysql-slow.log"
 
 sync-sql:
-	scp -C wepapp/sql isucon-app2:/home/isucon/webapp/
-	scp -C wepapp/sql isucon-app3:/home/isucon/webapp/
-	scp -C wepapp/sql isucon-app4:/home/isucon/webapp/
-	scp -C wepapp/sql isucon-app5:/home/isucon/webapp/
+	rsync -av -e ssh webapp/sql isucon-app2:/home/isucon/webapp/
+	rsync -av -e ssh webapp/sql isucon-app3:/home/isucon/webapp/
+	rsync -av -e ssh webapp/sql isucon-app4:/home/isucon/webapp/
+	rsync -av -e ssh webapp/sql isucon-app5:/home/isucon/webapp/
 
 bench:
 	ssh isucon-bench "export ISUXBENCH_TARGET=172.31.13.141 &&  ./bin/benchmarker --stage=prod --request-timeout=10s --initialize-request-timeout=60s"
