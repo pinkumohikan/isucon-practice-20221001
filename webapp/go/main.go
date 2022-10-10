@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -258,9 +259,13 @@ func (h *Handler) checkSessionMiddleware(next echo.HandlerFunc) echo.HandlerFunc
 			return errorResponse(c, http.StatusUnauthorized, ErrUnauthorized)
 		}
 
-		userID, err := getUserID(c)
+		sesssionUserIDStrs := strings.Split(sessID, "::")
+		if len(sesssionUserIDStrs) != 2 {
+			return errorResponse(c, http.StatusUnauthorized, ErrUnauthorized)
+		}
+		sesssionUserID, err := strconv.ParseInt(sesssionUserIDStrs[1], 10, 64)
 		if err != nil {
-			return errorResponse(c, http.StatusBadRequest, err)
+			return errorResponse(c, http.StatusUnauthorized, ErrUnauthorized)
 		}
 
 		requestAt, err := getRequestTime(c)
@@ -269,15 +274,19 @@ func (h *Handler) checkSessionMiddleware(next echo.HandlerFunc) echo.HandlerFunc
 		}
 
 		userSession := new(Session)
-		db := selectDB(userID)
 		query := "SELECT * FROM user_sessions WHERE session_id=? AND deleted_at IS NULL"
-		if err := db.Get(userSession, query, sessID); err != nil {
+		if err := selectDB(sesssionUserID).Get(userSession, query, sessID); err != nil {
 			if err == sql.ErrNoRows {
 				return errorResponse(c, http.StatusUnauthorized, ErrUnauthorized)
 			}
 			return errorResponse(c, http.StatusInternalServerError, err)
 		}
 
+		userID, err := getUserID(c)
+		if err != nil {
+			return errorResponse(c, http.StatusBadRequest, err)
+		}
+		db := selectDB(userID)
 		if userSession.UserID != userID {
 			return errorResponse(c, http.StatusForbidden, ErrForbidden)
 		}
@@ -846,7 +855,7 @@ func (h *Handler) createUser(c echo.Context) error {
 
 	sess := &Session{
 		UserID:    user.ID,
-		SessionID: sessID,
+		SessionID: fmt.Sprintf("%s::%d", sessID, user.ID),
 		CreatedAt: requestAt,
 		UpdatedAt: requestAt,
 		ExpiredAt: requestAt + 86400,
@@ -940,7 +949,7 @@ func (h *Handler) login(c echo.Context) error {
 	}
 	sess := &Session{
 		UserID:    req.UserID,
-		SessionID: sessID,
+		SessionID: fmt.Sprintf("%s::%d", sessID, user.ID),
 		CreatedAt: requestAt,
 		UpdatedAt: requestAt,
 		ExpiredAt: requestAt + 86400,
