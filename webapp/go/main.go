@@ -642,6 +642,10 @@ func initialize(c echo.Context) error {
 		}(host)
 	}
 
+	if len(errs) > 0 {
+		return errorResponse(c, http.StatusInternalServerError, <-errs)
+	}
+
 	if _, err := dbx.Exec("CALL sys.ps_truncate_all_tables(FALSE)"); err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
