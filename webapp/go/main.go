@@ -641,7 +641,7 @@ func initialize(c echo.Context) error {
 			}
 		}(host)
 	}
-
+	wg.Wait()
 	if len(errs) > 0 {
 		return errorResponse(c, http.StatusInternalServerError, <-errs)
 	}
