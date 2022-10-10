@@ -133,7 +133,7 @@ func (h *Handler) generateID() (int64, error) {
 }
 
 // app4, app5
-var dbHosts = []string{"172.31.10.189", "172.31.6.131"}
+var dbHosts = []string{"172.31.11.148", "172.31.11.102", "172.31.10.189", "172.31.6.131"}
 var dbs = make([]*sqlx.DB, len(dbHosts))
 
 // connectDB DBに接続する
