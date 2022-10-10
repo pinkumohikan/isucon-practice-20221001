@@ -479,6 +479,7 @@ func (h *Handler) obtainLoginBonus(tx *sqlx.Tx, userID int64, requestAt int64) (
 // obtainPresent プレゼント付与
 func (h *Handler) obtainPresent(tx *sqlx.Tx, userID int64, requestAt int64) ([]*UserPresent, error) {
 	normalPresents := make([]*PresentAllMaster, 0)
+	db := selectDB(userID)
 	query := "SELECT * FROM present_all_masters WHERE registered_start_at <= ? AND registered_end_at >= ? AND id NOT IN (SELECT present_all_id FROM user_present_all_received_history WHERE user_id = ?)"
 	if err := tx.Select(&normalPresents, query, requestAt, requestAt, userID); err != nil {
 		return nil, err
@@ -497,7 +498,7 @@ func (h *Handler) obtainPresent(tx *sqlx.Tx, userID int64, requestAt int64) ([]*
 			UpdatedAt:      requestAt,
 		}
 		query = "INSERT INTO user_presents(user_id, sent_at, item_type, item_id, amount, present_message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-		if _, err := tx.Exec(query, up.UserID, up.SentAt, up.ItemType, up.ItemID, up.Amount, up.PresentMessage, up.CreatedAt, up.UpdatedAt); err != nil {
+		if _, err := db.Exec(query, up.UserID, up.SentAt, up.ItemType, up.ItemID, up.Amount, up.PresentMessage, up.CreatedAt, up.UpdatedAt); err != nil {
 			return nil, err
 		}
 
@@ -1072,6 +1073,7 @@ type GachaData struct {
 // POST /user/{userID}/gacha/draw/{gachaID}/{n}
 func (h *Handler) drawGacha(c echo.Context) error {
 	userID, err := getUserID(c)
+	db := selectDB(userID)
 	if err != nil {
 		return errorResponse(c, http.StatusBadRequest, err)
 	}
@@ -1171,10 +1173,17 @@ func (h *Handler) drawGacha(c echo.Context) error {
 	}
 
 	tx, err := h.DB.Beginx()
+
 	if err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 	defer tx.Rollback() //nolint:errcheck
+
+	ptx, err := db.Beginx()
+	if err != nil {
+		return errorResponse(c, http.StatusInternalServerError, err)
+	}
+	defer ptx.Rollback() //nolint:errcheck
 
 	// プレゼントにガチャ結果を付与する
 	presents := make([]*UserPresent, 0, gachaCount)
@@ -1190,7 +1199,7 @@ func (h *Handler) drawGacha(c echo.Context) error {
 			UpdatedAt:      requestAt,
 		}
 		query = "INSERT INTO user_presents(user_id, sent_at, item_type, item_id, amount, present_message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-		if _, err := tx.Exec(query, present.UserID, present.SentAt, present.ItemType, present.ItemID, present.Amount, present.PresentMessage, present.CreatedAt, present.UpdatedAt); err != nil {
+		if _, err := ptx.Exec(query, present.UserID, present.SentAt, present.ItemType, present.ItemID, present.Amount, present.PresentMessage, present.CreatedAt, present.UpdatedAt); err != nil {
 			return errorResponse(c, http.StatusInternalServerError, err)
 		}
 
@@ -1204,6 +1213,11 @@ func (h *Handler) drawGacha(c echo.Context) error {
 	}
 
 	err = tx.Commit()
+	if err != nil {
+		return errorResponse(c, http.StatusInternalServerError, err)
+	}
+
+	err = ptx.Commit()
 	if err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
@@ -1245,13 +1259,13 @@ func (h *Handler) listPresent(c echo.Context) error {
 	WHERE user_id = ? AND deleted_at IS NULL
 	ORDER BY created_at DESC, id
 	LIMIT ? OFFSET ?`
-	dbx := selectDB(userID)
-	if err = dbx.Select(&presentList, query, userID, PresentCountPerPage, offset); err != nil {
+	db := selectDB(userID)
+	if err = db.Select(&presentList, query, userID, PresentCountPerPage, offset); err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 
 	var presentCount int
-	if err = dbx.Get(&presentCount, "SELECT COUNT(*) FROM user_presents WHERE user_id = ? AND deleted_at IS NULL", userID); err != nil {
+	if err = db.Get(&presentCount, "SELECT COUNT(*) FROM user_presents WHERE user_id = ? AND deleted_at IS NULL", userID); err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 
@@ -1301,6 +1315,7 @@ func (h *Handler) receivePresent(c echo.Context) error {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
 
+	db := selectDB(userID)
 	// 未取得のプレゼント取得
 	query := "SELECT * FROM user_presents WHERE id IN (?) AND deleted_at IS NULL"
 	query, params, err := sqlx.In(query, req.PresentIDs)
@@ -1308,8 +1323,7 @@ func (h *Handler) receivePresent(c echo.Context) error {
 		return errorResponse(c, http.StatusBadRequest, err)
 	}
 	obtainPresent := []*UserPresent{}
-	sqlx := selectDB(userID)
-	if err = sqlx.Select(&obtainPresent, query, params...); err != nil {
+	if err = db.Select(&obtainPresent, query, params...); err != nil {
 		return errorResponse(c, http.StatusBadRequest, err)
 	}
 
