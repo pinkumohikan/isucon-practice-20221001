@@ -36,3 +36,12 @@ echo "LOAD DATA INFILE '${SECURE_DIR}5_user_presents_not_receive_data.tsv' REPLA
         --host "$ISUCON_DB_HOST" \
         --port "$ISUCON_DB_PORT" \
         "$ISUCON_DB_NAME" 
+
+echo "
+ALTER TABLE user_present_all_received_history ADD INDEX (user_id, present_all_id);
+ALTER TABLE user_items ADD INDEX (user_id, item_id);
+" | mysql -u"$ISUCON_DB_USER" \
+        -p"$ISUCON_DB_PASSWORD" \
+        --host "$ISUCON_DB_HOST" \
+        --port "$ISUCON_DB_PORT" \
+        "$ISUCON_DB_NAME"
