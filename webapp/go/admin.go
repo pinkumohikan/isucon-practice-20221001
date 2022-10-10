@@ -104,7 +104,7 @@ func (h *Handler) adminLogin(c echo.Context) error {
 		ExpiredAt: requestAt + 86400,
 	}
 
-	query = "INSERT INTO admin_sessions(user_id, session_id, created_at, updated_at, expired_at) VALUES (?, ?, ?, ?, ?, ?)"
+	query = "INSERT INTO admin_sessions(user_id, session_id, created_at, updated_at, expired_at) VALUES (?, ?, ?, ?, ?)"
 	if _, err = tx.Exec(query, sess.UserID, sess.SessionID, sess.CreatedAt, sess.UpdatedAt, sess.ExpiredAt); err != nil {
 		return errorResponse(c, http.StatusInternalServerError, err)
 	}
