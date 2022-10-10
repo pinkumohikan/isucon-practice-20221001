@@ -46,7 +46,7 @@ CREATE TABLE `user_decks` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 CREATE TABLE `user_bans` (
-  `id` bigint NOT NULL,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `user_id` bigint NOT NULL comment 'ユーザID', 
   `created_at` bigint NOT NULL,
   `updated_at`bigint NOT NULL,
