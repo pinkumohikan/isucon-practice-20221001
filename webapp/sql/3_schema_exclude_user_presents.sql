@@ -260,6 +260,4 @@ CREATE TABLE `admin_users` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
-ALTER TABLE user_present_all_received_history ADD INDEX (user_id, present_all_id);
-ALTER TABLE present_all_masters ADD INDEX (registered_start_at);
 ALTER TABLE user_presents MODIFY COLUMN `id` bigint NOT NULL AUTO_INCREMENT;
