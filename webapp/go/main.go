@@ -136,6 +136,36 @@ func connectDB(batch bool) (*sqlx.DB, error) {
 	return dbx, nil
 }
 
+func initDB() error {
+	dbHosts := []string{}
+	for i, host := range dbHosts {
+		dbs[i], err = connectDBByHost(host, false)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// connectDB DBに接続する
+func connectDBByHost(host string, batch bool) (*sqlx.DB, error) {
+	dsn := fmt.Sprintf(
+		"%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=true&loc=%s&multiStatements=%t&interpolateParams=true",
+		getEnv("ISUCON_DB_USER", "isucon"),
+		getEnv("ISUCON_DB_PASSWORD", "isucon"),
+		host,
+		getEnv("ISUCON_DB_PORT", "3306"),
+		getEnv("ISUCON_DB_NAME", "isucon"),
+		"Asia%2FTokyo",
+		batch,
+	)
+	dbx, err := sqlx.Open("mysql", dsn)
+	if err != nil {
+		return nil, err
+	}
+	return dbx, nil
+}
+
 // adminMiddleware 管理者ツール向けのmiddleware
 func (h *Handler) adminMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
