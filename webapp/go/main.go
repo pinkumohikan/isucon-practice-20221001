@@ -12,16 +12,19 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"sync"
 	"time"
 
+	_ "net/http/pprof"
+
+	_ "github.com/go-sql-driver/mysql"
+
 	"github.com/felixge/fgprof"
-	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
-	_ "net/http/pprof"
 )
 
 var (
@@ -45,7 +48,7 @@ const (
 	DeckCardNumber      int = 3
 	PresentCountPerPage int = 100
 
-	SQLDirectory string = "../sql/"
+	SQLDirectory string = "/home/isucon/webapp/sql/"
 )
 
 type Handler struct {
@@ -443,12 +446,7 @@ func (h *Handler) obtainPresent(tx *sqlx.Tx, userID int64, requestAt int64) ([]*
 
 	obtainPresents := make([]*UserPresent, 0)
 	for _, np := range normalPresents {
-		pID, err := h.generateID()
-		if err != nil {
-			return nil, err
-		}
 		up := &UserPresent{
-			ID:             pID,
 			UserID:         userID,
 			SentAt:         requestAt,
 			ItemType:       np.ItemType,
@@ -458,8 +456,8 @@ func (h *Handler) obtainPresent(tx *sqlx.Tx, userID int64, requestAt int64) ([]*
 			CreatedAt:      requestAt,
 			UpdatedAt:      requestAt,
 		}
-		query = "INSERT INTO user_presents(id, user_id, sent_at, item_type, item_id, amount, present_message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
-		if _, err := tx.Exec(query, up.ID, up.UserID, up.SentAt, up.ItemType, up.ItemID, up.Amount, up.PresentMessage, up.CreatedAt, up.UpdatedAt); err != nil {
+		query = "INSERT INTO user_presents(user_id, sent_at, item_type, item_id, amount, present_message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+		if _, err := tx.Exec(query, up.UserID, up.SentAt, up.ItemType, up.ItemID, up.Amount, up.PresentMessage, up.CreatedAt, up.UpdatedAt); err != nil {
 			return nil, err
 		}
 
@@ -610,10 +608,33 @@ func initialize(c echo.Context) error {
 	}
 	defer dbx.Close()
 
-	out, err := exec.Command("/bin/sh", "-c", SQLDirectory+"init.sh").CombinedOutput()
-	if err != nil {
-		c.Logger().Errorf("Failed to initialize %s: %v", string(out), err)
-		return errorResponse(c, http.StatusInternalServerError, err)
+	// ----------
+	// データベースの初期化
+	// ----------
+	wg := sync.WaitGroup{}
+	sshHosts := []string{
+		"isucon-app2",
+		"isucon-app3",
+		"isucon-app4",
+		"isucon-app5",
+	}
+	errs := make(chan error, len(sshHosts))
+	defer close(errs)
+	for _, host := range sshHosts {
+		wg.Add(1)
+		go func(host string) {
+			defer wg.Done()
+			out, err := exec.Command("/bin/sh", "-c", "ssh "+host+" "+"\"/bin/sh -c "+SQLDirectory+"init.sh\"").CombinedOutput()
+			if err != nil {
+				c.Logger().Errorf("Failed to initialize %s: %v", string(out), err)
+				errs <- err
+				return
+			}
+		}(host)
+	}
+	wg.Wait()
+	if len(errs) > 0 {
+		return errorResponse(c, http.StatusInternalServerError, <-errs)
 	}
 
 	if _, err := dbx.Exec("CALL sys.ps_truncate_all_tables(FALSE)"); err != nil {
@@ -1116,12 +1137,7 @@ func (h *Handler) drawGacha(c echo.Context) error {
 	// プレゼントにガチャ結果を付与する
 	presents := make([]*UserPresent, 0, gachaCount)
 	for _, v := range result {
-		pID, err := h.generateID()
-		if err != nil {
-			return errorResponse(c, http.StatusInternalServerError, err)
-		}
 		present := &UserPresent{
-			ID:             pID,
 			UserID:         userID,
 			SentAt:         requestAt,
 			ItemType:       v.ItemType,
@@ -1131,8 +1147,8 @@ func (h *Handler) drawGacha(c echo.Context) error {
 			CreatedAt:      requestAt,
 			UpdatedAt:      requestAt,
 		}
-		query = "INSERT INTO user_presents(id, user_id, sent_at, item_type, item_id, amount, present_message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
-		if _, err := tx.Exec(query, present.ID, present.UserID, present.SentAt, present.ItemType, present.ItemID, present.Amount, present.PresentMessage, present.CreatedAt, present.UpdatedAt); err != nil {
+		query = "INSERT INTO user_presents(user_id, sent_at, item_type, item_id, amount, present_message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+		if _, err := tx.Exec(query, present.UserID, present.SentAt, present.ItemType, present.ItemID, present.Amount, present.PresentMessage, present.CreatedAt, present.UpdatedAt); err != nil {
 			return errorResponse(c, http.StatusInternalServerError, err)
 		}
 
@@ -1832,29 +1848,6 @@ func successResponse(c echo.Context, v interface{}) error {
 // noContentResponse
 func noContentResponse(c echo.Context, status int) error {
 	return c.NoContent(status)
-}
-
-// generateID ユニークなIDを生成する
-func (h *Handler) generateID() (int64, error) {
-	var updateErr error
-	for i := 0; i < 100; i++ {
-		res, err := h.DB.Exec("UPDATE id_generator SET id=LAST_INSERT_ID(id+1)")
-		if err != nil {
-			if merr, ok := err.(*mysql.MySQLError); ok && merr.Number == 1213 {
-				updateErr = err
-				continue
-			}
-			return 0, err
-		}
-
-		id, err := res.LastInsertId()
-		if err != nil {
-			return 0, err
-		}
-		return id, nil
-	}
-
-	return 0, fmt.Errorf("failed to generate id: %w", updateErr)
 }
 
 // generateUUID UUIDの生成

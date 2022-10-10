@@ -46,7 +46,7 @@ CREATE TABLE `user_decks` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 CREATE TABLE `user_bans` (
-  `id` bigint NOT NULL,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `user_id` bigint NOT NULL comment 'ユーザID', 
   `created_at` bigint NOT NULL,
   `updated_at`bigint NOT NULL,
@@ -131,6 +131,7 @@ CREATE TABLE `user_present_all_received_history` (
   `deleted_at` bigint default NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+ALTER TABLE user_present_all_received_history ADD INDEX (user_id, present_all_id);
 
 /* ガチャマスタ */
 
@@ -168,6 +169,7 @@ CREATE TABLE `user_items` (
   PRIMARY KEY (`id`),
   INDEX userid_idx (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+ALTER TABLE user_items ADD INDEX (user_id, item_id);
 
 CREATE TABLE `user_cards` (
   `id` bigint NOT NULL AUTO_INCREMENT,
@@ -237,7 +239,7 @@ CREATE TABLE `user_one_time_tokens` (
 
 /* 管理者権限のセッション管理 */
 CREATE TABLE `admin_sessions` (
-  `id` bigint NOT NULL,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `user_id` bigint NOT NULL,
   `session_id` varchar(128) NOT NULL,
   `created_at` bigint NOT NULL,
@@ -260,4 +262,4 @@ CREATE TABLE `admin_users` (
 
 ALTER TABLE user_present_all_received_history ADD INDEX (user_id, present_all_id);
 ALTER TABLE present_all_masters ADD INDEX (registered_start_at);
-
+ALTER TABLE user_presents MODIFY COLUMN `id` bigint NOT NULL AUTO_INCREMENT;
